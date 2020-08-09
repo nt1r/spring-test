@@ -4,12 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 
 @Data
 @NoArgsConstructor
@@ -27,7 +22,7 @@ public class User {
     @Pattern(regexp = "1\\d{10}")
     private String phone;
     @JsonIgnore
-    private int voteNum =10;
+    private int voteNum = 10;
 
     public User(String userName, String gender, int age, String email, String phone) {
         this.userName = userName;

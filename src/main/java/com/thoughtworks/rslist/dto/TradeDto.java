@@ -8,18 +8,21 @@ import lombok.NoArgsConstructor;
 import javax.persistence.*;
 
 @Entity
-@Builder
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "rsEvent")
-public class RsEventDto {
+@Table(name = "trade")
+public class TradeDto {
     @Id
     @GeneratedValue
-    private int id;
-    private String eventName;
-    private String keyword;
-    private int voteNum;
+    private Integer id;
+
+    private Integer amount;
+
+    private Integer rank;
+    
     @ManyToOne
-    private UserDto user;
+    @JoinColumn(name = "rs_event_id")
+    private RsEventDto rsEvent;
 }
