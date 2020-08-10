@@ -1,5 +1,6 @@
 package com.thoughtworks.rslist.api;
 
+import com.thoughtworks.rslist.domain.Trade;
 import com.thoughtworks.rslist.dto.RsEventDto;
 import com.thoughtworks.rslist.dto.TradeDto;
 import com.thoughtworks.rslist.dto.UserDto;
@@ -33,9 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class RsControllerTest {
     @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
     UserRepository userRepository;
     @Autowired
     RsEventRepository rsEventRepository;
@@ -43,7 +41,8 @@ class RsControllerTest {
     VoteRepository voteRepository;
     @Autowired
     TradeRepository tradeRepository;
-
+    @Autowired
+    private MockMvc mockMvc;
     private UserDto userDto;
 
     @BeforeEach
@@ -304,5 +303,36 @@ class RsControllerTest {
         TradeDto tradeDto = tradeRepository.findAll().get(0);
         assertEquals(100, tradeDto.getAmount());
         assertEquals(1, tradeDto.getRank());
+    }
+
+    @Test
+    public void shouldSortByVoteNumsWhenGetRsEvents() throws Exception {
+        userDto = userRepository.save(userDto);
+
+        RsEventDto rsEventDto1 = RsEventDto.builder().eventName("event_1").keyword("class_1").user(userDto).voteNum(6).build();
+        RsEventDto rsEventDto2 = RsEventDto.builder().eventName("event_2").keyword("class_2").user(userDto).voteNum(3).build();
+        RsEventDto rsEventDto3 = RsEventDto.builder().eventName("event_3").keyword("class_3").user(userDto).voteNum(1).build();
+        RsEventDto rsEventDto4 = RsEventDto.builder().eventName("event_4").keyword("class_4").user(userDto).voteNum(0).build();
+        RsEventDto rsEventDto5 = RsEventDto.builder().eventName("event_5").keyword("class_5").user(userDto).voteNum(0).build();
+        rsEventDto1 = rsEventRepository.save(rsEventDto1);
+        rsEventDto2 = rsEventRepository.save(rsEventDto2);
+        rsEventDto3 = rsEventRepository.save(rsEventDto3);
+        rsEventDto4 = rsEventRepository.save(rsEventDto4);
+        rsEventDto5 = rsEventRepository.save(rsEventDto5);
+
+        TradeDto tradeDtoOf4thEvent = TradeDto.builder().amount(200).rank(1).rsEvent(rsEventDto4).build();
+        TradeDto tradeDtoOf5thEvent = TradeDto.builder().amount(100).rank(3).rsEvent(rsEventDto5).build();
+        tradeRepository.save(tradeDtoOf4thEvent);
+        tradeRepository.save(tradeDtoOf5thEvent);
+
+        mockMvc
+                .perform(get("/rs/list"))
+                .andExpect(jsonPath("$", hasSize(5)))
+                .andExpect(jsonPath("$[0].eventName", is("event_4")))
+                .andExpect(jsonPath("$[1].eventName", is("event_1")))
+                .andExpect(jsonPath("$[2].eventName", is("event_5")))
+                .andExpect(jsonPath("$[3].eventName", is("event_2")))
+                .andExpect(jsonPath("$[4].eventName", is("event_3")))
+                .andExpect(status().isOk());
     }
 }
