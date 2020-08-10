@@ -13,6 +13,9 @@ import com.thoughtworks.rslist.repository.UserRepository;
 import com.thoughtworks.rslist.repository.VoteRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 import static com.thoughtworks.rslist.util.Convertor.convertTrade2TradeDto;
@@ -63,13 +66,21 @@ public class RsService {
         if (isRankBought(trade.getRank())) {
             TradeDto tradeDto = tradeRepository.findByRank(trade.getRank()).get();
             if (isBoughtAmountEnough(tradeDto, trade)) {
-                rsEventRepository.delete(rsEventDto);
-                tradeDto.setAmount(trade.getAmount());
-                tradeRepository.save(tradeDto);
+                rsEventRepository.delete(tradeDto.getRsEvent());
+
+                rsEventDto.setBought(true);
+                rsEventDto.setRank(trade.getRank());
+                rsEventDto = rsEventRepository.save(rsEventDto);
+
+                tradeRepository.save(convertTrade2TradeDto(trade, rsEventDto));
             } else {
                 throw new RequestNotValidException("buy amount not enough");
             }
         } else {
+            rsEventDto.setBought(true);
+            rsEventDto.setRank(trade.getRank());
+            rsEventRepository.save(rsEventDto);
+
             tradeRepository.save(convertTrade2TradeDto(trade, rsEventDto));
         }
     }
@@ -80,5 +91,41 @@ public class RsService {
 
     private boolean isRankBought(Integer rank) {
         return tradeRepository.findByRank(rank).isPresent();
+    }
+
+    public List<RsEventDto> sortRsEvents(List<RsEventDto> rsEventDtoList) {
+        List<RsEventDto> totalList = new ArrayList<>(rsEventDtoList);
+        List<RsEventDto> boughtList = new ArrayList<>();
+        List<RsEventDto> notBoughtList = new ArrayList<>();
+
+        for (RsEventDto rsEventDto: rsEventDtoList) {
+            if (rsEventDto.isBought()) {
+                boughtList.add(rsEventDto);
+            } else {
+                notBoughtList.add(rsEventDto);
+            }
+        }
+
+        notBoughtList.sort(new Comparator<RsEventDto>() {
+            @Override
+            public int compare(RsEventDto event1, RsEventDto event2) {
+                return event2.getVoteNum() - event1.getVoteNum();
+            }
+        });
+
+        List<Integer> boughtRankList = new ArrayList<>();
+        for (RsEventDto boughtEvent: boughtList) {
+            int rank = boughtEvent.getRank();
+            totalList.set(rank - 1, boughtEvent);
+            boughtRankList.add(rank - 1);
+        }
+
+        int indexOfNotBoughtList = 0;
+        for (int i = 0; i < totalList.size(); ++i) {
+            if (!boughtRankList.contains(i)) {
+                totalList.set(i, notBoughtList.get(indexOfNotBoughtList++));
+            }
+        }
+        return totalList;
     }
 }

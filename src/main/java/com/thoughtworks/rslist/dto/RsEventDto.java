@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Builder
@@ -21,6 +22,10 @@ public class RsEventDto {
     private String keyword;
     private int voteNum;
     private int rank;
+    @Builder.Default
+    private boolean isBought = false;
+    @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "rsEvent")
+    private List<TradeDto> trades;
     @ManyToOne
     private UserDto user;
 }

@@ -33,8 +33,10 @@ public class RsController {
     @GetMapping("/rs/list")
     public ResponseEntity<List<RsEvent>> getRsEventListBetween(
             @RequestParam(required = false) Integer start, @RequestParam(required = false) Integer end) {
+        List<RsEventDto> rsEventDtoList = rsEventRepository.findAll();
+        rsEventDtoList = rsService.sortRsEvents(rsEventDtoList);
         List<RsEvent> rsEvents =
-                rsEventRepository.findAll().stream()
+                rsEventDtoList.stream()
                         .map(
                                 item ->
                                         RsEvent.builder()

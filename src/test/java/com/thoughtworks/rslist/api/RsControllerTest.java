@@ -31,7 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class RsControllerTest {
     @Autowired
     UserRepository userRepository;
@@ -320,10 +319,26 @@ class RsControllerTest {
         rsEventDto4 = rsEventRepository.save(rsEventDto4);
         rsEventDto5 = rsEventRepository.save(rsEventDto5);
 
-        TradeDto tradeDtoOf4thEvent = TradeDto.builder().amount(200).rank(1).rsEvent(rsEventDto4).build();
-        TradeDto tradeDtoOf5thEvent = TradeDto.builder().amount(100).rank(3).rsEvent(rsEventDto5).build();
-        tradeRepository.save(tradeDtoOf4thEvent);
-        tradeRepository.save(tradeDtoOf5thEvent);
+        String jsonValue =
+                String.format(
+                        "{\"amount\":%d,\"rank\":\"%d\"}",
+                        200, 1);
+        mockMvc
+                .perform(
+                        post("/rs/buy/{id}", rsEventDto4.getId())
+                                .content(jsonValue)
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+        jsonValue =
+                String.format(
+                        "{\"amount\":%d,\"rank\":\"%d\"}",
+                        100, 3);
+        mockMvc
+                .perform(
+                        post("/rs/buy/{id}", rsEventDto5.getId())
+                                .content(jsonValue)
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
         mockMvc
                 .perform(get("/rs/list"))
